@@ -9,35 +9,48 @@
 <body class="flashcards-app">
   <header class="site-header" role="banner">
     <h1 class="app-title">Flashcards</h1>
+    <div class="header-actions">
+      <button type="button" class="btn new-deck" aria-label="Create new deck">+ New Deck</button>
+    </div>
   </header>
 
   <div class="app-grid">
     <aside class="sidebar" role="complementary" aria-label="Decks">
       <h2 class="sr-only">Decks</h2>
-      <ul class="decks">
-        <li class="deck">Deck 1</li>
-        <li class="deck">Deck 2</li>
-        <li class="deck">Deck 3</li>
+      <ul class="decks" role="list">
+        <li class="deck active" role="listitem" tabindex="0">Spanish — Basics</li>
+        <li class="deck" role="listitem" tabindex="0">Biology — Cells</li>
+        <li class="deck" role="listitem" tabindex="0">History — WWII</li>
       </ul>
     </aside>
 
     <main class="main" role="main" aria-live="polite">
-      <section class="card-view">
-        <article class="card">
-          <h2 class="card-front">Front</h2>
-          <div class="card-back" hidden>Back</div>
-          <div class="card-controls">
-            <button type="button" class="prev">Prev</button>
-            <button type="button" class="flip">Flip</button>
-            <button type="button" class="next">Next</button>
-          </div>
+      <header class="deck-header" role="region" aria-label="Deck header">
+        <h2 class="deck-title">Spanish — Basics</h2>
+        <div class="deck-toolbar" role="toolbar" aria-label="Deck tools">
+          <input class="search" type="search" placeholder="Search cards…" aria-label="Search cards" />
+          <button type="button" class="btn shuffle" aria-label="Shuffle deck">Shuffle</button>
+          <button type="button" class="btn new-card" aria-label="Add new card">+ New Card</button>
+        </div>
+      </header>
+
+      <section class="card-view" aria-label="Card viewer">
+        <article class="card" aria-live="off">
+          <div class="card-front" role="article">Hola</div>
+          <div class="card-back" role="article" hidden>Hi / Hello</div>
         </article>
       </section>
+
+      <div class="card-controls" role="group" aria-label="Card controls">
+        <button type="button" class="btn prev" aria-label="Previous card">Prev</button>
+        <button type="button" class="btn flip" aria-pressed="false" aria-label="Flip card">Flip</button>
+        <button type="button" class="btn next" aria-label="Next card">Next</button>
+      </div>
     </main>
   </div>
 
   <footer class="site-footer" role="contentinfo">
-    <small>© Flashcards</small>
+    <small>Tip: click a deck, then use Flip / Next / Prev to study.</small>
   </footer>
 
   <script src="app.js" defer></script>

@@ -3,55 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Flashcards App</title>
-  <link rel="stylesheet" href="flashcards.css">
+  <title>Flashcards</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="app">
-    <header>
-      <h1>Flashcards</h1>
-      <nav aria-label="primary">
-        <!-- optional nav/actions -->
-      </nav>
-    </header>
+<body class="flashcards-app">
+  <header class="site-header" role="banner">
+    <h1 class="app-title">Flashcards</h1>
+  </header>
 
-    <div class="content">
-      <aside class="sidebar" aria-labelledby="decks-title">
-        <h2 id="decks-title">Decks</h2>
-        <ul class="decks">
-          <li data-deck="1">Biology - Cells</li>
-          <li data-deck="2">Spanish - Basics</li>
-          <li data-deck="3">Math - Formulas</li>
-        </ul>
-      </aside>
+  <div class="app-grid">
+    <aside class="sidebar" role="complementary" aria-label="Decks">
+      <h2 class="sr-only">Decks</h2>
+      <ul class="decks">
+        <li class="deck">Deck 1</li>
+        <li class="deck">Deck 2</li>
+        <li class="deck">Deck 3</li>
+      </ul>
+    </aside>
 
-      <main>
-        <section class="card-area" aria-live="polite">
-          <article class="card" id="card">
-            <div class="card-front">Tap Flip to reveal the answer.</div>
-          </article>
-        </section>
+    <main class="main" role="main" aria-live="polite">
+      <section class="card-view">
+        <article class="card">
+          <div class="card-front">Front</div>
+          <div class="card-back" hidden>Back</div>
+        </article>
+      </section>
 
-        <div class="controls">
-          <button id="prev">Previous</button>
-          <button id="flip">Flip</button>
-          <button id="next">Next</button>
-        </div>
-      </main>
-    </div>
-
-    <footer>
-      <small>Built for quick study sessions — minimal prototype.</small>
-    </footer>
+      <div class="card-controls">
+        <button type="button" class="prev">Prev</button>
+        <button type="button" class="flip">Flip</button>
+        <button type="button" class="next">Next</button>
+      </div>
+    </main>
   </div>
 
-  <script>
-    // Minimal JS hooks (no behavior implemented) for future enhancement
-    document.getElementById('flip').addEventListener('click',()=>{
-      const card = document.getElementById('card');
-      card.classList.toggle('flipped');
-      card.querySelector('div').textContent = card.classList.contains('flipped') ? 'Answer: Placeholder' : 'Tap Flip to reveal the answer.';
-    });
-  </script>
+  <footer class="site-footer" role="contentinfo">
+    <small>© Flashcards</small>
+  </footer>
+
+  <script src="app.js" defer></script>
 </body>
 </html>
