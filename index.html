@@ -3,17 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Flashcards App - Create, study, and master decks with interactive flashcards" />
+  <meta name="theme-color" content="#4a90e2" />
   <title>Flashcards App</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="flashcards-app">
+  <!-- Skip to main content for accessibility -->
+  <a href="#main-content" class="skip-to-main">Skip to main content</a>
+
   <!-- Part 1: Header -->
   <header class="site-header" role="banner">
     <div class="header-content">
-      <h1 class="app-title">📚 Flashcards</h1>
+      <div class="header-left">
+        <h1 class="app-title">📚 Flashcards</h1>
+        <span class="app-subtitle">Master learning</span>
+      </div>
       <div class="header-actions">
-        <button type="button" class="btn btn-primary new-deck" aria-label="Create new deck">
+        <button 
+          type="button" 
+          class="btn btn-primary new-deck" 
+          aria-label="Create new deck"
+          title="Create a new deck (Ctrl+N)"
+        >
           + New Deck
+        </button>
+        <button
+          type="button"
+          class="btn btn-icon theme-toggle"
+          aria-label="Toggle dark mode"
+          title="Toggle dark/light mode"
+        >
+          🌙
         </button>
       </div>
     </div>
@@ -27,16 +48,49 @@
         <h2 class="sidebar-title">Decks</h2>
         <span class="deck-count" aria-live="polite" aria-label="Number of decks">0</span>
       </div>
+
+      <div class="sidebar-actions">
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary import-btn"
+          aria-label="Import decks from JSON"
+          title="Import decks from file"
+        >
+          📥 Import
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary export-btn"
+          aria-label="Export decks as JSON"
+          title="Export decks to file"
+        >
+          📤 Export
+        </button>
+      </div>
+
       <ul class="decks-list" role="list">
         <!-- Decks populated by JS -->
       </ul>
+
       <div class="sidebar-empty" role="status">
-        <p>No decks yet. Create one to start!</p>
+        <p>📭 No decks yet</p>
+        <p class="sidebar-empty-hint">Click "New Deck" to get started!</p>
+      </div>
+
+      <div class="sidebar-stats">
+        <div class="stat">
+          <span class="stat-label">Total Cards:</span>
+          <span class="stat-value total-cards-count">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Last Saved:</span>
+          <span class="stat-value last-saved-time">now</span>
+        </div>
       </div>
     </aside>
 
     <!-- Part 1: Main Content Area -->
-    <main class="main" role="main" aria-live="polite" aria-label="Study area">
+    <main class="main" role="main" aria-live="polite" aria-label="Study area" id="main-content">
       <!-- Deck Header with Toolbar -->
       <header class="deck-header" role="region" aria-label="Deck controls">
         <div class="deck-title-section">
@@ -46,7 +100,9 @@
 
         <div class="deck-toolbar" role="toolbar" aria-label="Deck tools">
           <div class="search-wrapper">
+            <label for="search-input" class="sr-only">Search cards</label>
             <input
+              id="search-input"
               class="search-input"
               type="search"
               placeholder="Search cards…"
@@ -54,19 +110,48 @@
               disabled
             />
             <span class="search-results" aria-live="polite" aria-label="Search results count"></span>
+            <button
+              type="button"
+              class="btn btn-icon clear-search"
+              aria-label="Clear search"
+              title="Clear search (Esc)"
+              disabled
+            >
+              ✕
+            </button>
           </div>
-          <button type="button" class="btn btn-secondary shuffle-btn" aria-label="Shuffle deck" disabled>
-            🔀 Shuffle
-          </button>
-          <button type="button" class="btn btn-secondary new-card" aria-label="Add new card to deck" disabled>
-            + Card
-          </button>
+
+          <div class="deck-actions">
+            <button
+              type="button"
+              class="btn btn-secondary shuffle-btn"
+              aria-label="Shuffle deck"
+              title="Shuffle deck (S)"
+              disabled
+            >
+              🔀 Shuffle
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary new-card"
+              aria-label="Add new card to deck"
+              title="Add new card (Ctrl+K)"
+              disabled
+            >
+              + Card
+            </button>
+          </div>
         </div>
       </header>
 
       <!-- Card Study Area -->
       <section class="card-view" aria-label="Card viewer" role="region">
-        <article class="card" role="article" tabindex="0" title="Double-click to edit card">
+        <article
+          class="card"
+          role="article"
+          tabindex="0"
+          title="Double-click to edit • Click to flip • Space to flip"
+        >
           <div class="card-inner">
             <div class="card-front">
               <span class="card-content">Select a deck to start</span>
@@ -76,45 +161,92 @@
             </div>
           </div>
         </article>
-      </section>
 
-      <!-- Card Navigation Controls -->
-      <div class="card-controls" role="group" aria-label="Card navigation">
-        <button type="button" class="btn btn-secondary prev-btn" aria-label="Previous card (← or P)" disabled>
-          ← Prev
-        </button>
-        <button type="button" class="btn btn-accent flip-btn" aria-label="Flip card (Space or F)" aria-pressed="false" disabled>
-          🔄 Flip
-        </button>
-        <button type="button" class="btn btn-secondary next-btn" aria-label="Next card (→ or N)" disabled>
-          Next →
-        </button>
-      </div>
+        <div class="card-hint" role="status" aria-live="polite">
+          <small id="card-hint-text">Click a deck to begin studying</small>
+        </div>
+      </section>
 
       <!-- Progress Display -->
       <div class="card-progress" aria-live="polite" aria-label="Study progress">
-        <span class="progress-text">
-          Card <span class="current-card">0</span> of <span class="total-cards">0</span>
-        </span>
+        <div class="progress-info">
+          <span class="progress-text">
+            Card <span class="current-card">0</span> of <span class="total-cards">0</span>
+          </span>
+          <span class="progress-percentage">
+            <span class="current-percentage">0</span>%
+          </span>
+        </div>
         <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-fill"></div>
         </div>
       </div>
 
+      <!-- Card Navigation Controls -->
+      <div class="card-controls" role="group" aria-label="Card navigation">
+        <button
+          type="button"
+          class="btn btn-secondary prev-btn"
+          aria-label="Previous card (← or P)"
+          title="Previous card (← or P)"
+          disabled
+        >
+          ← Prev
+        </button>
+        <button
+          type="button"
+          class="btn btn-accent flip-btn"
+          aria-label="Flip card (Space or F)"
+          title="Flip card (Space or F)"
+          aria-pressed="false"
+          disabled
+        >
+          🔄 Flip
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary next-btn"
+          aria-label="Next card (→ or N)"
+          title="Next card (→ or N)"
+          disabled
+        >
+          Next →
+        </button>
+      </div>
+
       <!-- Empty State -->
       <div class="main-empty" role="status">
-        <p>👋 Select a deck from the sidebar to begin studying</p>
+        <div class="empty-icon">📭</div>
+        <p class="empty-title">No Deck Selected</p>
+        <p class="empty-description">
+          Select a deck from the sidebar or create a new one to begin studying.
+        </p>
       </div>
+
+      <!-- Status Messages -->
+      <div class="status-message" role="status" aria-live="assertive" aria-atomic="true"></div>
     </main>
   </div>
 
   <!-- Footer -->
   <footer class="site-footer" role="contentinfo">
-    <small>
-      💡 <kbd>Space</kbd> to flip • <kbd>←</kbd> <kbd>→</kbd> to navigate •
-      <kbd>S</kbd> to shuffle • <kbd>Esc</kbd> to exit study
-    </small>
+    <div class="footer-content">
+      <div class="footer-shortcuts">
+        <span>💡 Shortcuts:</span>
+        <kbd>Space</kbd> to flip •
+        <kbd>←</kbd> <kbd>→</kbd> to navigate •
+        <kbd>S</kbd> to shuffle •
+        <kbd>Ctrl+N</kbd> new deck •
+        <kbd>Ctrl+K</kbd> new card
+      </div>
+      <div class="footer-info">
+        <small>Made with ❤️ for learners</small>
+      </div>
+    </div>
   </footer>
+
+  <!-- Hidden file input for import/export -->
+  <input type="file" id="import-file" class="hidden" accept=".json" aria-label="Import file" />
 
   <!-- Scripts -->
   <script src="storage.js" defer></script>
