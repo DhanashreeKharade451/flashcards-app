@@ -2,20 +2,21 @@
     --primary: #4A90E2;
     --accent: #50E3C2;
     --bg: #F5F7FA;
-    --text: #222;
-    --surface: #fff;
+    --text: #111827;
+    --surface: #ffffff;
     --muted: #6b6b6b;
-    --radius: 8px;
+    --radius: 10px;
     --gap: 16px;
+    --sidebar-width: 260px;
     --max-width: 1200px;
     --shadow-elev: 0 8px 24px rgba(18,38,63,0.06);
-    --focus: 3px solid rgba(74,144,226,0.22);
-    --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --focus-color: rgba(74,144,226,0.22);
+    --font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-/* Dark mode override */
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
-    :root{
+    :root {
         --primary: #3b82f6;
         --accent: #34d399;
         --bg: #0b1020;
@@ -23,97 +24,186 @@
         --surface: #0f1724;
         --muted: #9aa7bf;
         --shadow-elev: 0 8px 24px rgba(2,6,23,0.7);
-        --focus: 3px solid rgba(59,130,246,0.22);
+        --focus-color: rgba(59,130,246,0.22);
     }
-
     body { background: var(--bg); color: var(--text); }
 }
 
+/* Reset + base */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.4;
+}
+
 /* Header */
-.site-header{
-  position:sticky;
-  top:0;
-  z-index:20;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:calc(var(--gap)/2);
-  padding:calc(var(--gap)/1.5) var(--gap);
-  background:linear-gradient(90deg,var(--primary),var(--accent));
-  color:#fff;
-  box-shadow:0 1px 0 rgba(0,0,0,0.06);
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--gap)/2);
+    padding: calc(var(--gap)/1.25) var(--gap);
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    color: #fff;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }
-.app-title{margin:0;font-weight:700;font-size:1.125rem}
+.app-title { margin: 0; font-weight: 700; font-size: 1.125rem; }
 
-/* Layout: responsive grid */
-.app-grid{
-  display:grid;
-  /* sidebar fixed at 260px, main is fluid. On very small screens layout collapses via media query below */
-  grid-template-columns: 260px 1fr;
-  gap:var(--gap);
-  max-width:var(--max-width);
-  margin:var(--gap) auto;
-  padding:0 var(--gap);
-  align-items:start;
+/* Grid: fixed-width sidebar, fluid main */
+.app-grid {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    gap: var(--gap);
+    max-width: var(--max-width);
+    margin: var(--gap) auto;
+    padding: 0 var(--gap);
+    align-items: start;
 }
 
-/* Allow sidebar to shrink a bit on narrower containers while keeping main fluid */
+/* Allow sidebar to shrink slightly on medium screens */
 @media (min-width: 900px) and (max-width: 1199px) {
-  .app-grid{
-    grid-template-columns: minmax(200px, 260px) 1fr;
-  }
+    .app-grid { grid-template-columns: minmax(200px, var(--sidebar-width)) 1fr; }
 }
 
-/* Mobile: stack, sidebar becomes full width above main */
-@media (max-width: 899px){
-  .app-grid{
-    grid-template-columns: 1fr;
-    padding: calc(var(--gap)/2);
-  }
-  .sidebar{ order: -1; margin-bottom: calc(var(--gap)/2); }
+/* Mobile: stack */
+@media (max-width: 899px) {
+    .app-grid {
+        grid-template-columns: 1fr;
+        padding: calc(var(--gap)/2);
+    }
+    .sidebar { order: -1; margin-bottom: calc(var(--gap)/2); }
 }
 
-/* Surface and shadow */
-.sidebar{ background: var(--surface); padding: var(--gap); border-radius: var(--radius); box-shadow: var(--shadow-elev); }
-.card{ background: var(--surface); box-shadow: var(--shadow-elev); }
+/* Sidebar & decks */
+.sidebar {
+    background: var(--surface);
+    padding: var(--gap);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-elev);
+}
+.decks { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--gap)/2); }
+.deck {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: inherit;
+    background: transparent;
+    transition: background .12s ease, transform .06s ease;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+.deck:hover { background: rgba(74,144,226,0.06); }
+.deck.active { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
-/* Focus styles for keyboard users */
-:focus{ outline: none; }
-
-/* Use focus-visible to only show on keyboard focus when supported */
-:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 4px transparent; /* reset for browsers that don't support focus-visible */
+/* Main area */
+.main {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+.deck-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap);
+    background: transparent;
+}
+.deck-toolbar { display: flex; gap: 8px; align-items: center; }
+.search {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.06);
+    background: transparent;
+    color: inherit;
 }
 
+/* Card */
+.card-view { display: flex; align-items: center; justify-content: center; padding: var(--gap); }
+.card {
+    width: 100%;
+    max-width: 720px;
+    background: var(--surface);
+    padding: calc(var(--gap) * 1.25);
+    border-radius: 12px;
+    box-shadow: var(--shadow-elev);
+    text-align: center;
+    display: grid;
+    gap: calc(var(--gap)/1.5);
+}
+.card-front { font-size: 1.5rem; }
+.card-back { color: var(--muted); }
+
+/* Controls */
+.card-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: calc(var(--gap)/2);
+}
+button {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+button.prev, button.next { background: #6aa8e8; }
+button.flip { background: var(--accent); color: #042; }
+
+/* Footer */
+.site-footer {
+    text-align: center;
+    padding: calc(var(--gap)*0.75);
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Focus / keyboard styles */
+:focus { outline: none; }
+button:focus, .deck:focus, a:focus, input:focus {
+    outline: none;
+}
+@supports selector(:focus-visible) {
+    :focus:not(:focus-visible) { box-shadow: none; }
+}
+:focus-visible {
+    box-shadow: 0 0 0 4px rgba(0,0,0,0); /* reset */
+}
 button:focus-visible,
 .deck:focus-visible,
-a:focus-visible {
-  /* clear but visible ring using CSS variable */
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(74,144,226,0.12), 0 0 0 6px var(--focus);
-  border-radius: 6px;
+a:focus-visible,
+input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74,144,226,0.12), 0 0 0 6px var(--focus-color);
+    border-radius: 8px;
 }
 
-/* Stronger visible state for interactive controls */
-button:focus,
-button:active { transform: translateY(0); }
-
-/* Visually-hidden accessible helper (keep existing behavior) */
-.sr-only{ position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0 }
-
-/* Minor accessible contrast tweak for deck active state */
-.deck.active{ background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-
-/* Ensure links/buttons have minimum hit area */
-button, .deck { min-height: 40px; padding-left: 12px; padding-right: 12px; display: inline-flex; align-items: center; justify-content: center; }
-
-/* Responsive tweaks */
-@media (max-width:900px){
-  .app-grid{grid-template-columns: 1fr; padding:calc(var(--gap)/2)}
-  .sidebar{order:-1;margin-bottom:calc(var(--gap)/2)}
-  .app-title{font-size:1rem}
+/* small screens tweaks */
+@media (max-width:480px) {
+    .card { padding: 12px; border-radius: 10px; }
+    .deck { padding: 8px 10px; }
+    .app-title { font-size: 1rem; }
 }
-@media (min-width:1400px){
-  .app-grid{max-width:1400px;grid-template-columns:320px 1fr}
-}
+
+/* end of file */
