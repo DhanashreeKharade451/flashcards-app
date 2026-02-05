@@ -1,7 +1,5 @@
 // Minimal modal + deck CRUD (in-memory) wired to UI
 
-// ...existing code...
-
 (() => {
   /* --- In-memory state --- */
   const state = {
@@ -22,6 +20,7 @@
   const cardBack = el('.card-back');
   const newDeckBtn = el('.new-deck');
   const newCardBtn = el('.new-card');
+  const shuffleBtn = el('.shuffle');
   const prevBtn = el('.prev');
   const nextBtn = el('.next');
   const flipBtn = el('.flip');
@@ -32,10 +31,40 @@
     state.decks.forEach((d, i) => {
       const li = document.createElement('li');
       li.className = 'deck' + (i === state.currentDeckIndex ? ' active' : '');
-      li.role = 'listitem';
+      li.setAttribute('role', 'listitem');
       li.tabIndex = 0;
       li.dataset.index = i;
-      li.textContent = d.name;
+      li.style = 'display:flex;align-items:center;gap:6px;';
+
+      // deck label
+      const label = document.createElement('span');
+      label.className = 'deck-label';
+      label.textContent = d.name;
+      label.style = 'flex:1;min-width:0;cursor:pointer;';
+
+      // edit button
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'deck-edit';
+      editBtn.title = 'Rename deck (F2)';
+      editBtn.setAttribute('aria-label', `Rename ${d.name}`);
+      editBtn.dataset.index = i;
+      editBtn.textContent = '✎';
+      editBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;';
+
+      // delete button
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'deck-delete';
+      delBtn.title = 'Delete deck';
+      delBtn.setAttribute('aria-label', `Delete ${d.name}`);
+      delBtn.dataset.index = i;
+      delBtn.textContent = '🗑';
+      delBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;';
+
+      li.appendChild(label);
+      li.appendChild(editBtn);
+      li.appendChild(delBtn);
       decksList.appendChild(li);
     });
   }
@@ -92,7 +121,6 @@
     const content = document.createElement('div');
     content.className = 'modal-content';
     dialog.appendChild(content);
-    // allow consumer to populate
     const focusTarget = buildContent(content) || content;
 
     // actions
@@ -115,9 +143,7 @@
       destructive.style.background = '#e55353';
       destructive.style.color = '#fff';
       actions.appendChild(destructive);
-      destructive.addEventListener('click', () => {
-        close('destructive');
-      });
+      destructive.addEventListener('click', () => close('destructive'));
     }
     actions.appendChild(submitBtn);
     dialog.appendChild(actions);
@@ -131,7 +157,6 @@
     // focusable management
     const focusableSelector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
     let focusable = Array.from(dialog.querySelectorAll(focusableSelector));
-    // If buildContent returned an element to focus, try focusing that
     setTimeout(() => {
       const first = focusTarget.querySelector ? focusTarget.querySelector(focusableSelector) : focusTarget;
       (first || focusable[0] || submitBtn).focus();
@@ -176,9 +201,7 @@
 
     cancelBtn.addEventListener('click', () => close('cancel'));
     submitBtn.addEventListener('click', () => close('submit'));
-
     overlay.addEventListener('mousedown', (e) => {
-      // clicking outside dialog closes
       if (e.target === overlay) close('overlay');
     });
 
@@ -206,18 +229,52 @@
   function deleteDeck(index) {
     if (!state.decks[index]) return;
     state.decks.splice(index, 1);
-    // adjust current index
-    if (state.currentDeckIndex >= state.decks.length) state.currentDeckIndex = Math.max(0, state.decks.length - 1);
+    if (state.currentDeckIndex >= state.decks.length) {
+      state.currentDeckIndex = Math.max(0, state.decks.length - 1);
+    }
     renderDeckList();
+    renderCardView();
+  }
+
+  function addCard(front, back) {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck) return;
+    deck.cards.push({ front, back });
+    state.currentCardIndex = deck.cards.length - 1;
+    renderCardView();
+  }
+
+  function shuffleDeck() {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck || !deck.cards.length) return;
+    for (let i = deck.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck.cards[i], deck.cards[j]] = [deck.cards[j], deck.cards[i]];
+    }
+    state.currentCardIndex = 0;
     renderCardView();
   }
 
   /* --- UI wiring --- */
   // deck selection (click / keyboard)
   decksList.addEventListener('click', e => {
+    const editBtn = e.target.closest('.deck-edit');
+    const delBtn = e.target.closest('.deck-delete');
     const li = e.target.closest('.deck');
-    if (!li) return;
-    selectDeck(Number(li.dataset.index));
+
+    if (editBtn) {
+      e.stopPropagation();
+      openRenameDeckModal(Number(editBtn.dataset.index));
+      return;
+    }
+    if (delBtn) {
+      e.stopPropagation();
+      openDeleteDeckModal(Number(delBtn.dataset.index));
+      return;
+    }
+    if (li) {
+      selectDeck(Number(li.dataset.index));
+    }
   });
 
   decksList.addEventListener('keydown', e => {
@@ -228,24 +285,56 @@
       e.preventDefault();
       selectDeck(idx);
     } else if (e.key === 'Delete') {
-      // quick keyboard delete with confirmation modal
       openDeleteDeckModal(idx);
-    } else if ((e.key === 'F2')) {
+    } else if (e.key === 'F2') {
+      e.preventDefault();
       openRenameDeckModal(idx);
     }
   });
 
-  // double-click to rename
-  decksList.addEventListener('dblclick', e => {
-    const li = e.target.closest('.deck');
-    if (!li) return;
-    openRenameDeckModal(Number(li.dataset.index));
-  });
-
-  // new deck -> open modal
+  // new deck button
   newDeckBtn.addEventListener('click', () => openCreateDeckModal());
 
-  // flip/prev/next controls
+  // shuffle
+  shuffleBtn && shuffleBtn.addEventListener('click', () => shuffleDeck());
+
+  // new card
+  newCardBtn && newCardBtn.addEventListener('click', () => {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck) return;
+    createModal({
+      title: 'New Card',
+      buildContent: (container) => {
+        const f = document.createElement('input');
+        f.type = 'text';
+        f.placeholder = 'Front';
+        f.style = 'width:100%;margin-bottom:8px;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
+        const b = document.createElement('input');
+        b.type = 'text';
+        b.placeholder = 'Back';
+        b.style = 'width:100%;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
+        container.appendChild(f);
+        container.appendChild(b);
+        b.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.querySelector('.modal-submit').click();
+          }
+        });
+        return f;
+      },
+      onSubmit: () => {
+        const inputs = document.querySelectorAll('.modal .modal-content input');
+        const front = inputs[0]?.value?.trim();
+        const back = inputs[1]?.value?.trim();
+        if (!front) return;
+        addCard(front, back || '');
+      },
+      submitLabel: 'Add'
+    });
+  });
+
+  // flip/prev/next
   prevBtn.addEventListener('click', () => {
     const deck = state.decks[state.currentDeckIndex] || { cards: [] };
     if (!deck.cards.length) return;
@@ -267,35 +356,7 @@
     cardBack.hidden = !cardBack.hidden;
   });
 
-  // new card (simple prompt to add a card in-memory)
-  newCardBtn && newCardBtn.addEventListener('click', () => {
-    const deck = state.decks[state.currentDeckIndex];
-    if (!deck) return;
-    createModal({
-      title: 'New Card',
-      buildContent: (container) => {
-        const f = document.createElement('input'); f.type = 'text'; f.placeholder = 'Front text'; f.style = 'width:100%;margin-bottom:8px;padding:8px;';
-        const b = document.createElement('input'); b.type = 'text'; b.placeholder = 'Back text'; b.style = 'width:100%;padding:8px;';
-        container.appendChild(f);
-        container.appendChild(b);
-        // submit on Enter in last field
-        b.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
-        return container;
-      },
-      onSubmit: function () {
-        const inputs = document.querySelectorAll('.modal .modal-content input');
-        const front = inputs[0]?.value?.trim();
-        const back = inputs[1]?.value?.trim();
-        if (!front) return;
-        state.decks[state.currentDeckIndex].cards.push({ front, back });
-        state.currentCardIndex = state.decks[state.currentDeckIndex].cards.length - 1;
-        renderCardView();
-      },
-      submitLabel: 'Add'
-    });
-  });
-
-  /* --- Modals for deck create / rename / delete --- */
+  /* --- Modals --- */
   function openCreateDeckModal() {
     createModal({
       title: 'Create Deck',
@@ -303,18 +364,16 @@
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = 'Deck name';
-        input.style = 'width:100%;padding:10px;';
+        input.style = 'width:100%;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
         input.className = 'modal-deck-name';
         container.appendChild(input);
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            // trigger submit button click
-            const submit = document.querySelector('.modal-submit');
-            submit && submit.click();
+            document.querySelector('.modal-submit').click();
           }
         });
-        return container;
+        return input;
       },
       onSubmit: () => {
         const name = document.querySelector('.modal-deck-name')?.value || '';
@@ -328,15 +387,15 @@
     const deck = state.decks[index];
     if (!deck) return;
     createModal({
-      title: 'Rename / Delete Deck',
+      title: 'Rename Deck',
       buildContent: (container) => {
         const input = document.createElement('input');
         input.type = 'text';
         input.value = deck.name;
-        input.style = 'width:100%;padding:10px;';
+        input.style = 'width:100%;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
         input.className = 'modal-deck-rename';
         container.appendChild(input);
-        return container;
+        return input;
       },
       onSubmit: (mode) => {
         if (mode === 'destructive') {
@@ -359,7 +418,7 @@
       title: 'Delete Deck?',
       buildContent: (container) => {
         const p = document.createElement('p');
-        p.textContent = `Delete "${deck.name}" — this cannot be undone.`;
+        p.textContent = `Delete "${deck.name}" and all its cards? This cannot be undone.`;
         container.appendChild(p);
         return container;
       },
