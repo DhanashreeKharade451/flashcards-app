@@ -4,23 +4,33 @@
   /* --- In-memory state --- */
   const state = {
     decks: [
-      { name: "Spanish — Basics", cards: [{ front: "Hola", back: "Hi / Hello" }] },
-      { name: "Biology — Cells", cards: [{ front: "Cell", back: "Basic unit of life" }] },
-      { name: "History — WWII", cards: [{ front: "1939", back: "War begins" }] }
+      { name: "Spanish — Basics", cards: [
+        { id: 1, front: "Hola", back: "Hi / Hello" },
+        { id: 2, front: "Adiós", back: "Goodbye" }
+      ]},
+      { name: "Biology — Cells", cards: [
+        { id: 3, front: "Cell", back: "Basic unit of life" }
+      ]},
+      { name: "History — WWII", cards: [
+        { id: 4, front: "1939", back: "War begins" }
+      ]}
     ],
     currentDeckIndex: 0,
-    currentCardIndex: 0
+    currentCardIndex: 0,
+    nextCardId: 5
   };
 
   /* --- Helpers: DOM refs --- */
   const el = selector => document.querySelector(selector);
   const decksList = el('.decks');
   const deckTitle = el('.deck-title');
+  const cardArticle = el('.card');
   const cardFront = el('.card-front');
   const cardBack = el('.card-back');
   const newDeckBtn = el('.new-deck');
   const newCardBtn = el('.new-card');
   const shuffleBtn = el('.shuffle');
+  const searchInput = el('.search');
   const prevBtn = el('.prev');
   const nextBtn = el('.next');
   const flipBtn = el('.flip');
@@ -36,13 +46,11 @@
       li.dataset.index = i;
       li.style = 'display:flex;align-items:center;gap:6px;';
 
-      // deck label
       const label = document.createElement('span');
       label.className = 'deck-label';
       label.textContent = d.name;
       label.style = 'flex:1;min-width:0;cursor:pointer;';
 
-      // edit button
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
       editBtn.className = 'deck-edit';
@@ -50,9 +58,8 @@
       editBtn.setAttribute('aria-label', `Rename ${d.name}`);
       editBtn.dataset.index = i;
       editBtn.textContent = '✎';
-      editBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;';
+      editBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;color:inherit;';
 
-      // delete button
       const delBtn = document.createElement('button');
       delBtn.type = 'button';
       delBtn.className = 'deck-delete';
@@ -60,7 +67,7 @@
       delBtn.setAttribute('aria-label', `Delete ${d.name}`);
       delBtn.dataset.index = i;
       delBtn.textContent = '🗑';
-      delBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;';
+      delBtn.style = 'padding:4px 8px;border-radius:4px;background:transparent;border:none;cursor:pointer;font-size:0.9rem;color:inherit;';
 
       li.appendChild(label);
       li.appendChild(editBtn);
@@ -75,8 +82,7 @@
     const card = deck.cards[state.currentCardIndex] || { front: 'No cards', back: '' };
     cardFront.textContent = card.front;
     cardBack.textContent = card.back;
-    cardBack.hidden = true;
-    cardFront.hidden = false;
+    cardArticle.classList.remove('is-flipped');
     flipBtn && flipBtn.setAttribute('aria-pressed', 'false');
   }
 
@@ -92,7 +98,6 @@
   function createModal({ title = '', buildContent, onSubmit, submitLabel = 'Save', cancelLabel = 'Cancel', destructiveLabel }) {
     const opener = document.activeElement;
 
-    // overlay
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.style = `
@@ -100,7 +105,6 @@
       background:rgba(0,0,0,0.35);z-index:9999;padding:20px;
     `;
 
-    // dialog
     const dialog = document.createElement('div');
     dialog.className = 'modal';
     dialog.setAttribute('role', 'dialog');
@@ -111,19 +115,16 @@
       max-width:520px;width:100%;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,0.2);
     `;
 
-    // header
     const h = document.createElement('h3');
     h.textContent = title;
     h.style = 'margin:0 0 12px 0;font-size:1.05rem;';
     dialog.appendChild(h);
 
-    // content
     const content = document.createElement('div');
     content.className = 'modal-content';
     dialog.appendChild(content);
     const focusTarget = buildContent(content) || content;
 
-    // actions
     const actions = document.createElement('div');
     actions.style = 'display:flex;gap:8px;justify-content:flex-end;margin-top:14px;';
     const cancelBtn = document.createElement('button');
@@ -141,7 +142,6 @@
       destructive.className = 'btn modal-destructive';
       destructive.textContent = destructiveLabel;
       destructive.style.background = '#e55353';
-      destructive.style.color = '#fff';
       actions.appendChild(destructive);
       destructive.addEventListener('click', () => close('destructive'));
     }
@@ -150,11 +150,9 @@
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
-    // hide background from assistive tech
     const mainContent = document.querySelector('.flashcards-app');
     if (mainContent) mainContent.setAttribute('aria-hidden', 'true');
 
-    // focusable management
     const focusableSelector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
     let focusable = Array.from(dialog.querySelectorAll(focusableSelector));
     setTimeout(() => {
@@ -163,7 +161,6 @@
       focusable = Array.from(dialog.querySelectorAll(focusableSelector));
     }, 0);
 
-    // key handling (Tab trap + ESC)
     function onKey(e) {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -208,7 +205,7 @@
     return { close };
   }
 
-  /* --- Deck CRUD operations --- */
+  /* --- Deck CRUD --- */
   function createDeck(name) {
     const trimmed = (name || '').trim();
     if (!trimmed) return null;
@@ -236,11 +233,31 @@
     renderCardView();
   }
 
+  /* --- Card CRUD with delegated events --- */
   function addCard(front, back) {
     const deck = state.decks[state.currentDeckIndex];
     if (!deck) return;
-    deck.cards.push({ front, back });
+    const newCard = { id: state.nextCardId++, front, back };
+    deck.cards.push(newCard);
     state.currentCardIndex = deck.cards.length - 1;
+    renderCardView();
+  }
+
+  function editCard(index, front, back) {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck || !deck.cards[index]) return;
+    deck.cards[index].front = front;
+    deck.cards[index].back = back;
+    renderCardView();
+  }
+
+  function deleteCard(index) {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck || !deck.cards[index]) return;
+    deck.cards.splice(index, 1);
+    if (state.currentCardIndex >= deck.cards.length) {
+      state.currentCardIndex = Math.max(0, deck.cards.length - 1);
+    }
     renderCardView();
   }
 
@@ -255,8 +272,7 @@
     renderCardView();
   }
 
-  /* --- UI wiring --- */
-  // deck selection (click / keyboard)
+  /* --- UI wiring: delegated events --- */
   decksList.addEventListener('click', e => {
     const editBtn = e.target.closest('.deck-edit');
     const delBtn = e.target.closest('.deck-delete');
@@ -292,13 +308,18 @@
     }
   });
 
-  // new deck button
+  // card actions: edit/delete (for future use)
+  cardArticle.addEventListener('dblclick', () => {
+    const deck = state.decks[state.currentDeckIndex];
+    if (!deck || !deck.cards.length) return;
+    openEditCardModal(state.currentCardIndex);
+  });
+
+  // buttons
   newDeckBtn.addEventListener('click', () => openCreateDeckModal());
 
-  // shuffle
   shuffleBtn && shuffleBtn.addEventListener('click', () => shuffleDeck());
 
-  // new card
   newCardBtn && newCardBtn.addEventListener('click', () => {
     const deck = state.decks[state.currentDeckIndex];
     if (!deck) return;
@@ -307,11 +328,11 @@
       buildContent: (container) => {
         const f = document.createElement('input');
         f.type = 'text';
-        f.placeholder = 'Front';
+        f.placeholder = 'Front (question)';
         f.style = 'width:100%;margin-bottom:8px;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
         const b = document.createElement('input');
         b.type = 'text';
-        b.placeholder = 'Back';
+        b.placeholder = 'Back (answer)';
         b.style = 'width:100%;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
         container.appendChild(f);
         container.appendChild(b);
@@ -334,7 +355,6 @@
     });
   });
 
-  // flip/prev/next
   prevBtn.addEventListener('click', () => {
     const deck = state.decks[state.currentDeckIndex] || { cards: [] };
     if (!deck.cards.length) return;
@@ -350,10 +370,9 @@
   });
 
   flipBtn.addEventListener('click', () => {
-    const isBack = flipBtn.getAttribute('aria-pressed') === 'true';
-    flipBtn.setAttribute('aria-pressed', String(!isBack));
-    cardFront.hidden = !cardFront.hidden;
-    cardBack.hidden = !cardBack.hidden;
+    cardArticle.classList.toggle('is-flipped');
+    const isFlipped = cardArticle.classList.contains('is-flipped');
+    flipBtn.setAttribute('aria-pressed', String(isFlipped));
   });
 
   /* --- Modals --- */
@@ -429,6 +448,42 @@
       },
       submitLabel: 'Delete',
       cancelLabel: 'Cancel'
+    });
+  }
+
+  function openEditCardModal(index) {
+    const deck = state.decks[state.currentDeckIndex];
+    const card = deck?.cards[index];
+    if (!card) return;
+    createModal({
+      title: 'Edit Card',
+      buildContent: (container) => {
+        const f = document.createElement('input');
+        f.type = 'text';
+        f.value = card.front;
+        f.style = 'width:100%;margin-bottom:8px;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
+        const b = document.createElement('input');
+        b.type = 'text';
+        b.value = card.back;
+        b.style = 'width:100%;padding:10px;border:1px solid rgba(0,0,0,0.06);border-radius:6px;';
+        container.appendChild(f);
+        container.appendChild(b);
+        return f;
+      },
+      onSubmit: (mode) => {
+        if (mode === 'destructive') {
+          deleteCard(index);
+          return;
+        }
+        const inputs = document.querySelectorAll('.modal .modal-content input');
+        const front = inputs[0]?.value?.trim();
+        const back = inputs[1]?.value?.trim();
+        if (!front) return;
+        editCard(index, front, back || '');
+      },
+      submitLabel: 'Save',
+      cancelLabel: 'Cancel',
+      destructiveLabel: 'Delete'
     });
   }
 
